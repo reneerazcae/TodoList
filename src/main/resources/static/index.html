@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            margin-bottom: 10px;
+            color: #7c4caf;
+        }
+        h5, h6 {
+            color: #7c4caf;
+            margin: 0
+        }
+        h6 {
+            margin-bottom: 20px
+        }
+
+        #todo-form {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #todo-title {
+            padding: 10px;
+            border: 2px solid #7c4caf;
+            border-radius: 5px;
+            outline: none;
+            width: 250px;
+            transition: border-color 0.3s;
+        }
+        #todo-title:focus {
+            border-color: #a04caf;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #7c4caf;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #a04caf;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            width: auto;
+        }
+        li {
+            background-color: white;
+            margin: 5px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+        }
+        li.completed {
+            text-decoration: line-through;
+            color: gray;
+            background-color: #e8f5e9;
+        }
+        li:hover {
+            background-color: #f1f1f1;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+<h1>💜💜 To-Do List 💜💜</h1>
+<h5>Renee Razcae P. Bergoro</h5>
+<h6>BSIT 4-A</h6>
+<div id="todo-form">
+    <input type="text" id="todo-title" placeholder="Enter a new to-do">
+    <button onclick="createTodo()">Add To-Do</button>
+</div>
+<ul id="todo-list"></ul>
+
+<script>
+    const apiUrl = '/api/todos';
+
+    async function fetchTodos() {
+        const response = await fetch(apiUrl);
+        const todos = await response.json();
+        const todoList = document.getElementById('todo-list');
+        todoList.innerHTML = '';
+        todos.forEach(todo => {
+            const li = document.createElement('li');
+            li.textContent = todo.title;
+            li.className = todo.completed ? 'completed' : '';
+
+            // Toggle completion on click
+            li.addEventListener('click', () => toggleTodoCompletion(todo));
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent triggering the toggle
+                deleteTodo(todo.id);
+            };
+            li.appendChild(deleteBtn);
+
+            todoList.appendChild(li);
+        });
+    }
+
+    async function createTodo() {
+        const titleInput = document.getElementById('todo-title');
+        const title = titleInput.value.trim();
+        if (title === '') {
+            alert('Please enter a to-do title.');
+            return;
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, completed: false }),
+        });
+
+        if (response.ok) {
+            titleInput.value = '';
+            fetchTodos();
+        } else {
+            alert('Failed to create to-do.');
+        }
+    }
+
+    async function toggleTodoCompletion(todo) {
+        const updatedTodo = { ...todo, completed: !todo.completed };
+        const response = await fetch(`${apiUrl}/${todo.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedTodo),
+        });
+
+        if (response.ok) {
+            fetchTodos();
+        } else {
+            alert('Failed to update to-do.');
+        }
+    }
+
+    async function deleteTodo(id) {
+        const response = await fetch(`${apiUrl}/${id}`, {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            fetchTodos();
+        } else {
+            alert('Failed to delete to-do.');
+        }
+    }
+
+    window.onload = fetchTodos;
+</script>
+</body>
+</html>
